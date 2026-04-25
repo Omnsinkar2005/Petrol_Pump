@@ -49,6 +49,25 @@ Visit these in a browser or with `curl`:
 - `http://localhost:5000/` — should return service info JSON
 - `http://localhost:5000/api/health` — should report `database.connected: true`
 
+## SMS alerts
+
+Borrowed petrol deadline alerts can also send SMS to:
+
+- the owner number(s) from `OWNER_SMS_PHONE`
+- the borrower number from `BorrowedPetrol.borrower_phone_number`
+
+These SMS reminders are sent only for records due today or tomorrow, using the same daily scan that creates owner alerts.
+
+Set these in `backend/.env`:
+
+```bash
+SMS_PROVIDER=twilio
+TWILIO_ACCOUNT_SID=your_account_sid
+TWILIO_AUTH_TOKEN=your_auth_token
+TWILIO_PHONE_NUMBER=your_twilio_number
+OWNER_SMS_PHONE=+919876543210
+```
+
 ## Folder layout
 
 ```

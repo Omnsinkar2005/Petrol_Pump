@@ -76,6 +76,12 @@ async function update(req, res, next) {
     if (!Number.isInteger(id) || id <= 0) {
       return res.status(400).json({ success: false, message: 'Invalid id' });
     }
+    if (req.body?.status === 'deactivated' && req.user.employee_id === id) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot deactivate your own employee record',
+      });
+    }
     const employee = await service.updateEmployee(id, req.body);
     if (!employee) {
       return res.status(404).json({ success: false, message: 'Employee not found' });
@@ -100,6 +106,12 @@ async function remove(req, res, next) {
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id <= 0) {
       return res.status(400).json({ success: false, message: 'Invalid id' });
+    }
+    if (req.user.employee_id === id) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot delete your own employee record',
+      });
     }
     const ok = await service.deactivateEmployee(id);
     if (!ok) {

@@ -114,14 +114,38 @@ async function updateEmployee(id, data) {
     throw Object.assign(new Error('No valid fields to update'), { status: 400 });
   }
 
-  values.push(id);
-  const [result] = await pool.query(
-    `UPDATE Employees SET ${sets.join(', ')} WHERE id = ?`,
-    values
-  );
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
 
-  if (result.affectedRows === 0) return null;
-  return getEmployeeById(id);
+    values.push(id);
+    const [result] = await conn.query(
+      `UPDATE Employees SET ${sets.join(', ')} WHERE id = ?`,
+      values
+    );
+
+    if (result.affectedRows === 0) {
+      await conn.rollback();
+      return null;
+    }
+
+    if (data.status !== undefined) {
+      await conn.query(
+        `UPDATE Users
+            SET is_active = ?
+          WHERE employee_id = ?`,
+        [data.status !== 'deactivated', id]
+      );
+    }
+
+    await conn.commit();
+    return getEmployeeById(id);
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
 }
 
 /**
@@ -129,11 +153,33 @@ async function updateEmployee(id, data) {
  * Hard delete would cascade and wipe attendance/salary history.
  */
 async function deactivateEmployee(id) {
-  const [result] = await pool.query(
-    `UPDATE Employees SET status = 'deactivated' WHERE id = ?`,
-    [id]
-  );
-  return result.affectedRows > 0;
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [result] = await conn.query(
+      `UPDATE Employees SET status = 'deactivated' WHERE id = ?`,
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      await conn.rollback();
+      return false;
+    }
+
+    await conn.query(
+      `UPDATE Users SET is_active = FALSE WHERE employee_id = ?`,
+      [id]
+    );
+
+    await conn.commit();
+    return true;
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
 }
 
 module.exports = {

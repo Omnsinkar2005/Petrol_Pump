@@ -26,7 +26,8 @@ function startAlertJob() {
         console.log(
           `[alertJob] Done — scanned=${summary.scanned}, ` +
             `alertsCreated=${summary.alertsCreated}, ` +
-            `statusChanges=${summary.statusChanges}`
+            `statusChanges=${summary.statusChanges}, ` +
+            `smsSent=${summary.smsSent || 0}`
         );
       } catch (err) {
         console.error('[alertJob] FAILED:', err.message);
